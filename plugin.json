@@ -1,0 +1,35 @@
+{
+	"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+	"name": "helios",
+	"version": "1.0.0+069a7b6",
+	"description": "Connect your assistant to Helios: clients, CEMIG installations, consumer units and contacts, plus read-only invoices, boletos, energy bills, GD reports and generation units, with guided workflows.",
+	"author": {
+		"name": "Znit Solar"
+	},
+	"homepage": "https://github.com/znit-solar/helios-mcp",
+	"repository": "https://github.com/znit-solar/helios-mcp",
+	"license": "MIT",
+	"keywords": [
+		"helios",
+		"mcp",
+		"solar",
+		"cemig"
+	],
+	"extensions": {
+		"com.openai": {
+			"interface": {
+				"displayName": "Helios",
+				"shortDescription": "Clients, installations, consumer units and contacts in Helios",
+				"developerName": "Znit Solar",
+				"category": "Productivity",
+				"capabilities": [
+					"Read",
+					"Write"
+				],
+				"defaultPrompt": [
+					"Quem sou eu no Helios?"
+				]
+			}
+		}
+	}
+}

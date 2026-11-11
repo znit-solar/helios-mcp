@@ -1,0 +1,17 @@
+{
+	"name": "helios",
+	"version": "1.0.0+069a7b6",
+	"description": "Connect Claude to Helios: clients, CEMIG installations, consumer units and contacts, plus read-only invoices, boletos, energy bills, GD reports and generation units, with guided workflows.",
+	"author": {
+		"name": "Znit Solar"
+	},
+	"homepage": "https://github.com/znit-solar/helios-mcp",
+	"repository": "https://github.com/znit-solar/helios-mcp",
+	"license": "MIT",
+	"keywords": [
+		"helios",
+		"mcp",
+		"solar",
+		"cemig"
+	]
+}

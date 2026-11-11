@@ -1,0 +1,8 @@
+{
+	"mcpServers": {
+		"helios": {
+			"type": "http",
+			"url": "https://helios.datastrata.app/api/mcp/mcp"
+		}
+	}
+}
