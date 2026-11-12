@@ -11,7 +11,7 @@
 			"description": "Connect Claude to Helios: clients, CEMIG installations, consumer units and contacts, plus read-only invoices, boletos, energy bills, GD reports and generation units, with guided workflows.",
 			"category": "productivity",
 			"metadata": {
-				"sourceCommit": "069a7b62f56ca8fcbc2680259eb379efef7a0762"
+				"sourceCommit": "07ef92e2af335d979e36bf23fedf700f1b88329e"
 			}
 		}
 	]

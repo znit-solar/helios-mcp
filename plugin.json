@@ -1,7 +1,7 @@
 {
 	"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
 	"name": "helios",
-	"version": "1.0.0+069a7b6",
+	"version": "1.0.0+07ef92e",
 	"description": "Connect your assistant to Helios: clients, CEMIG installations, consumer units and contacts, plus read-only invoices, boletos, energy bills, GD reports and generation units, with guided workflows.",
 	"author": {
 		"name": "Znit Solar"

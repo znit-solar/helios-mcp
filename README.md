@@ -58,8 +58,36 @@ Depois faça o login pelo `/mcp`, como no passo 3.
 
 ## Claude Desktop e claude.ai
 
-O servidor entra como um conector personalizado da sua conta Claude e passa
-a funcionar no app para desktop, no site e no celular.
+O Claude Desktop e o claude.ai aceitam plugins. O plugin instala o
+servidor do Helios e as skills (roteiros de trabalho, veja
+[abaixo](#skills)). Ele fica salvo na sua conta Claude e passa a valer no
+app para desktop, no site, no celular, no Cowork e no Claude Code.
+
+### Com o plugin (recomendado)
+
+1. Abra **Customize** (Personalizar) e depois **Plugins**.
+2. Clique em **Add** (Adicionar) e em **Add marketplace**.
+3. Digite `znit-solar/helios-mcp` (ou
+   `https://github.com/znit-solar/helios-mcp`) e confirme.
+4. Em **Discover**, escolha o plugin **Helios** e clique em **Add**
+   (ou **Install**).
+5. Abra o plugin, vá à aba **Connectors** e clique em **Connect** no
+   Helios; faça login no Helios na janela do navegador. Instalar o plugin
+   não conecta o servidor sozinho.
+6. Numa nova conversa, digite `/` para ver as skills do plugin.
+
+Para atualizar, abra o marketplace e clique em **Check for updates** (ou
+ative **Sync automatically**).
+
+Nos planos Team e Enterprise, um Owner da organização pode restringir os
+marketplaces e os conectores permitidos (em **Organization settings**);
+se não conseguir adicionar o marketplace ou o conector, peça a ele.
+Depois disso, cada pessoa clica em **Connect** e entra com a própria
+conta do Helios.
+
+### Só o servidor, sem as skills
+
+O servidor também entra como um conector personalizado:
 
 1. Abra **Customize > Connectors** (Personalizar > Conectores).
 2. Clique em **Add** e depois em **Add custom connector**.
@@ -71,12 +99,7 @@ a funcionar no app para desktop, no site e no celular.
 
 O plano gratuito do Claude permite um conector personalizado, que pode ser
 o Helios. Nos planos Team e Enterprise, só um Owner da organização pode
-adicionar o conector (em **Organization settings > Connectors**). Depois
-disso, cada pessoa clica em **Connect** e entra com a própria conta do
-Helios.
-
-O Claude Desktop não instala as skills deste repositório; as ferramentas
-e as instruções do servidor já bastam para o uso do dia a dia.
+adicionar o conector (em **Organization settings > Connectors**).
 
 ## Codex (CLI, app e extensão de IDE)
 
@@ -181,9 +204,10 @@ gravado antes de confirmar.
 
 ### Skills
 
-No Claude Code e no Codex, o plugin traz roteiros para tarefas comuns. O
-assistente os usa sozinho quando o pedido combina; no Claude Code você
-também pode chamá-los pelo nome:
+No Claude Code, no Claude Desktop e no Codex, o plugin traz roteiros para
+tarefas comuns. O assistente os usa sozinho quando o pedido combina; no
+Claude Code e no Claude Desktop você também pode chamá-los pelo nome
+(digite `/`):
 
 | Skill | Para quê |
 |---|---|
@@ -196,7 +220,8 @@ também pode chamá-los pelo nome:
 - Claude Code: `/mcp`, escolha **helios** e selecione **Clear
   authentication**, ou desinstale com `/plugin uninstall helios@helios-mcp`.
 - Claude Desktop e claude.ai: **Customize > Connectors**, abra o Helios e
-  desconecte ou remova.
+  desconecte ou remova. Se instalou o plugin, remova-o também em
+  **Customize > Plugins** (menu do plugin > **Remove**).
 - Codex: `codex mcp logout helios`.
 - ChatGPT: remova o plugin em [chatgpt.com/plugins](https://chatgpt.com/plugins).
 
