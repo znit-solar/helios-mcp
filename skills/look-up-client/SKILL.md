@@ -19,10 +19,11 @@ descriptions; this skill only gives the order of the work.
   called `get_current_user` in this conversation and the user seems unsure
   which company they are in, call it.
 - Report what the tools return, and say so when they don't cover the
-  question instead of guessing. Invoices (cobranças) and their boletos,
-  CEMIG energy bills, GD reports and generation units are read-only here:
-  no tool issues, cancels or changes them, so point the user to the Helios
-  web app for that.
+  question instead of guessing. Invoices (cobranças), CEMIG energy bills,
+  GD reports and generation units are read-only here. The one boleto
+  change available is canceling a boleto (the `cancel-bank-slip`
+  workflow); for anything else, such as issuing a boleto or changing an
+  invoice, point the user to the Helios web app.
 - Quote amounts, kWh and dates exactly as the tools return them. Never
   recompute a total or a balance.
 

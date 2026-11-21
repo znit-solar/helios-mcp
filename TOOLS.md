@@ -2,11 +2,12 @@
 
 <!-- Generated from the Helios MCP server by `npm run generate:client-kit`. Do not edit by hand. -->
 
-Server version: `1.0.0`
+Server version: `1.1.0`
 
 This catalog lists what the Helios MCP server offers to AI assistants.
-Assistants read the same descriptions and parameter schemas directly from
-the server when they connect, so you never need to paste them anywhere.
+Assistants read the same descriptions, parameter schemas and output
+schemas directly from the server when they connect, so you never need to
+paste them anywhere.
 Every tool acts only on the data of the company you logged in with.
 
 ## Tools
@@ -29,6 +30,7 @@ Every tool acts only on the data of the company you logged in with.
 | [`search_contacts`](#search_contacts) | Buscar contatos | Read-only |
 | [`search_invoices`](#search_invoices) | Buscar cobranças | Read-only |
 | [`get_invoice`](#get_invoice) | Detalhar cobrança | Read-only |
+| [`cancel_bank_slip`](#cancel_bank_slip) | Cancelar boleto | Write (may change or delete existing data), idempotent, acts outside Helios |
 | [`search_energy_bills`](#search_energy_bills) | Buscar contas de energia | Read-only |
 | [`search_gd_reports`](#search_gd_reports) | Buscar relatórios GD | Read-only |
 | [`search_generation_units`](#search_generation_units) | Buscar unidades geradoras | Read-only |
@@ -43,7 +45,7 @@ Every assistant receives these instructions when it connects:
 - Call get_current_user first to confirm the connection and which company you are acting for.
 - Search before creating: look clients up by document and installations by installation or consumer unit number. Create tools return ConflictError on duplicates.
 - Formats: documents (CPF 11 digits, CNPJ 14 digits) and ZIP codes are digits only; installation numbers are 10 digits starting with 3; state codes are 2 uppercase letters.
-- Read-only billing data: invoices (Cobranças) and their boletos. Periods are MMM/YYYY with pt-BR months (FEV/2026); money is BRL as exact decimal strings, to quote as stored, never to recompute.
+- Billing data: invoices (Cobranças) and their boletos are read-only, except cancel_bank_slip, which cancels a boleto at its bank and can't be undone: call it only after the user explicitly confirms. Periods are MMM/YYYY with pt-BR months (FEV/2026); money is BRL as exact decimal strings, to quote as stored, never to recompute.
 - Read-only CEMIG data: generation units (UGs), imported energy bills (contas de energia) and GD reports (generation, compensation and credit balance in kWh) per installation and period.
 - A failed call returns isError with the text `<ErrorType>: <message>`, where ErrorType is ValidationError, NotFoundError, ConflictError or ServerError. Messages are in Brazilian Portuguese and can be shown to the user as they are.
 - Helios users are Brazilian: answer them in Brazilian Portuguese unless they write in another language.
@@ -59,6 +61,19 @@ Effect: Read-only
 Return the authenticated Helios user and the company every other tool is scoped to. Call it first in a session to confirm the connection works and which company you are acting for.
 
 No parameters.
+
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `user` | object |  |
+| `user.uuid` | string (uuid) |  |
+| `user.name` | string |  |
+| `user.email` | string |  |
+| `company` | object |  |
+| `company.uuid` | string (uuid) |  |
+| `company.name` | string |  |
+| `company.cnpj` | string |  |
 
 ### `create_client`
 
@@ -78,6 +93,20 @@ Create a client (individual or company) in the authenticated user's company. Doc
 | `city` | string | yes | City name. |
 | `state` | string | yes | Two-letter Brazilian state code, uppercase. Currently the system only stores MG. |
 | `observation` | string \| null | no | Free-form notes (max 1000 chars). Optional. |
+
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `uuid` | string (uuid) |  |
+| `name` | string |  |
+| `document` | string |  |
+| `address1` | string |  |
+| `address2` | string |  |
+| `city` | string |  |
+| `state` | string |  |
+| `zipCode` | string |  |
+| `observation` | string \| null |  |
 
 ### `update_client`
 
@@ -100,6 +129,20 @@ Update an existing client. Pass the client uuid plus the fields to change. The u
 | `patch.state` | string | no | Two-letter Brazilian state code, uppercase. Currently the system only stores MG. |
 | `patch.observation` | string \| null | no | Free-form notes (max 1000 chars). Optional. |
 
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `uuid` | string (uuid) |  |
+| `name` | string |  |
+| `document` | string |  |
+| `address1` | string |  |
+| `address2` | string |  |
+| `city` | string |  |
+| `state` | string |  |
+| `zipCode` | string |  |
+| `observation` | string \| null |  |
+
 ### `search_clients`
 
 **Buscar clientes**
@@ -118,6 +161,20 @@ Search clients in the authenticated user's company. Combine filters to narrow th
 | `zipCode` | string | no | Brazilian CEP, 8 digits, no dash. Example: 30123456. |
 | `limit` | integer | no |  |
 
+Returns `structuredContent.result` (array of object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `[].uuid` | string (uuid) |  |
+| `[].name` | string |  |
+| `[].document` | string |  |
+| `[].address1` | string |  |
+| `[].address2` | string |  |
+| `[].city` | string |  |
+| `[].state` | string |  |
+| `[].zipCode` | string |  |
+| `[].observation` | string \| null |  |
+
 ### `create_installation`
 
 **Cadastrar instalação**
@@ -130,6 +187,14 @@ Create an installation in the authenticated user's company. Provide installation
 |---|---|---|---|
 | `installationNumber` | string | no | CEMIG installation number, exactly 10 digits, must start with '3'. Example: 3000945591. |
 | `consumerUnitNumber` | string | no | CEMIG consumer-unit number, digits only, up to 15 digits. Often shown lpad'd to 15 in UIs but stored without padding. |
+
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `uuid` | string (uuid) |  |
+| `installationNumber` | string \| null |  |
+| `consumerUnitNumber` | string \| null |  |
 
 ### `update_installation`
 
@@ -146,6 +211,14 @@ Update an installation by uuid. The uuid must belong to your company; cross-comp
 | `patch.installationNumber` | string \| null | no |  |
 | `patch.consumerUnitNumber` | string \| null | no |  |
 
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `uuid` | string (uuid) |  |
+| `installationNumber` | string \| null |  |
+| `consumerUnitNumber` | string \| null |  |
+
 ### `search_installations`
 
 **Buscar instalações**
@@ -160,6 +233,14 @@ Search installations in the authenticated user's company by uuid, installationNu
 | `installationNumber` | string | no | CEMIG installation number, exactly 10 digits, must start with '3'. Example: 3000945591. |
 | `consumerUnitNumber` | string | no | CEMIG consumer-unit number, digits only, up to 15 digits. Often shown lpad'd to 15 in UIs but stored without padding. |
 | `limit` | integer | no |  |
+
+Returns `structuredContent.result` (array of object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `[].uuid` | string (uuid) |  |
+| `[].installationNumber` | string \| null |  |
+| `[].consumerUnitNumber` | string \| null |  |
 
 ### `create_consumer_unit`
 
@@ -228,6 +309,43 @@ Create a consumer unit (CU). The CU must be attached to both a client and an ins
 | `consumerUnit.city` | string | yes |  |
 | `consumerUnit.state` | string | yes | Two-letter Brazilian state code, uppercase. Currently the system only stores MG. |
 
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `uuid` | string (uuid) |  |
+| `holderName` | string |  |
+| `holderDocument` | string |  |
+| `active` | boolean |  |
+| `dueDay` | integer |  |
+| `dueNextMonth` | boolean |  |
+| `discountPercentage` | number |  |
+| `promptPaymentDiscount` | boolean |  |
+| `promptPaymentDiscountPercentage` | number \| null |  |
+| `includeCemigBilling` | boolean |  |
+| `hasOwnGeneration` | boolean |  |
+| `notificationChannel` | `"email"`, `"whatsapp"`, `"email_and_whatsapp"` |  |
+| `address1` | string |  |
+| `address2` | string |  |
+| `city` | string |  |
+| `state` | string |  |
+| `zipCode` | string |  |
+| `installation` | object |  |
+| `installation.uuid` | string (uuid) |  |
+| `installation.installationNumber` | string \| null |  |
+| `installation.consumerUnitNumber` | string \| null |  |
+| `client` | object |  |
+| `client.uuid` | string (uuid) |  |
+| `client.name` | string |  |
+| `client.document` | string |  |
+| `contactLinks` | array of object |  |
+| `contactLinks[].contact` | object |  |
+| `contactLinks[].contact.uuid` | string (uuid) |  |
+| `contactLinks[].contact.name` | string |  |
+| `contactLinks[].contact.email` | string (email) \| null |  |
+| `contactLinks[].contact.phone` | string |  |
+| `contactLinks[].isPrimary` | boolean |  |
+
 ### `update_consumer_unit`
 
 **Atualizar unidade consumidora**
@@ -259,6 +377,43 @@ Update a consumer unit by `uuid` (must belong to your company; cross-company uui
 | `clientUuid` | string (uuid) | no | Reassign the consumer unit to a different client. |
 | `installationUuid` | string (uuid) | no | Reassign the consumer unit to a different installation. |
 
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `uuid` | string (uuid) |  |
+| `holderName` | string |  |
+| `holderDocument` | string |  |
+| `active` | boolean |  |
+| `dueDay` | integer |  |
+| `dueNextMonth` | boolean |  |
+| `discountPercentage` | number |  |
+| `promptPaymentDiscount` | boolean |  |
+| `promptPaymentDiscountPercentage` | number \| null |  |
+| `includeCemigBilling` | boolean |  |
+| `hasOwnGeneration` | boolean |  |
+| `notificationChannel` | `"email"`, `"whatsapp"`, `"email_and_whatsapp"` |  |
+| `address1` | string |  |
+| `address2` | string |  |
+| `city` | string |  |
+| `state` | string |  |
+| `zipCode` | string |  |
+| `installation` | object |  |
+| `installation.uuid` | string (uuid) |  |
+| `installation.installationNumber` | string \| null |  |
+| `installation.consumerUnitNumber` | string \| null |  |
+| `client` | object |  |
+| `client.uuid` | string (uuid) |  |
+| `client.name` | string |  |
+| `client.document` | string |  |
+| `contactLinks` | array of object |  |
+| `contactLinks[].contact` | object |  |
+| `contactLinks[].contact.uuid` | string (uuid) |  |
+| `contactLinks[].contact.name` | string |  |
+| `contactLinks[].contact.email` | string (email) \| null |  |
+| `contactLinks[].contact.phone` | string |  |
+| `contactLinks[].isPrimary` | boolean |  |
+
 ### `search_consumer_units`
 
 **Buscar unidades consumidoras**
@@ -283,6 +438,43 @@ Search consumer units in the authenticated user's company. Combine filters to na
 | `address2` | string | no |  |
 | `limit` | integer | no |  |
 
+Returns `structuredContent.result` (array of object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `[].uuid` | string (uuid) |  |
+| `[].holderName` | string |  |
+| `[].holderDocument` | string |  |
+| `[].active` | boolean |  |
+| `[].dueDay` | integer |  |
+| `[].dueNextMonth` | boolean |  |
+| `[].discountPercentage` | number |  |
+| `[].promptPaymentDiscount` | boolean |  |
+| `[].promptPaymentDiscountPercentage` | number \| null |  |
+| `[].includeCemigBilling` | boolean |  |
+| `[].hasOwnGeneration` | boolean |  |
+| `[].notificationChannel` | `"email"`, `"whatsapp"`, `"email_and_whatsapp"` |  |
+| `[].address1` | string |  |
+| `[].address2` | string |  |
+| `[].city` | string |  |
+| `[].state` | string |  |
+| `[].zipCode` | string |  |
+| `[].installation` | object |  |
+| `[].installation.uuid` | string (uuid) |  |
+| `[].installation.installationNumber` | string \| null |  |
+| `[].installation.consumerUnitNumber` | string \| null |  |
+| `[].client` | object |  |
+| `[].client.uuid` | string (uuid) |  |
+| `[].client.name` | string |  |
+| `[].client.document` | string |  |
+| `[].contactLinks` | array of object |  |
+| `[].contactLinks[].contact` | object |  |
+| `[].contactLinks[].contact.uuid` | string (uuid) |  |
+| `[].contactLinks[].contact.name` | string |  |
+| `[].contactLinks[].contact.email` | string (email) \| null |  |
+| `[].contactLinks[].contact.phone` | string |  |
+| `[].contactLinks[].isPrimary` | boolean |  |
+
 ### `create_contact`
 
 **Cadastrar contato**
@@ -299,6 +491,15 @@ Create a contact in the authenticated user's company. Phone accepts Brazilian (+
 | `consumerUnits` | array of object | no | Optional consumer-unit associations created in the same transaction as the contact. Duplicated uuids are rejected. Default: `[]`. |
 | `consumerUnits[].uuid` | string (uuid) | yes | Consumer unit uuid. Must belong to the caller's company. |
 | `consumerUnits[].isPrimary` | boolean | no | Mark this contact as the primary contact for the consumer unit. At most one primary contact is allowed per unit. Default: `false`. |
+
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `uuid` | string (uuid) |  |
+| `name` | string |  |
+| `email` | string (email) \| null |  |
+| `phone` | string |  |
 
 ### `update_contact`
 
@@ -320,6 +521,15 @@ Update an existing contact. Pass the contact uuid plus at least one of: `patch` 
 | `consumerUnitsToAdd[].isPrimary` | boolean | no | Mark this contact as the primary contact for the consumer unit. At most one primary contact is allowed per unit. Default: `false`. |
 | `consumerUnitsToRemove` | array of string (uuid) | no | Consumer-unit uuids to unlink from this contact. Idempotent: unknown uuids are ignored. Default: `[]`. |
 
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `uuid` | string (uuid) |  |
+| `name` | string |  |
+| `email` | string (email) \| null |  |
+| `phone` | string |  |
+
 ### `delete_contact`
 
 **Excluir contato**
@@ -331,6 +541,12 @@ Delete a contact in the authenticated user's company. The uuid must belong to yo
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `uuid` | string (uuid) | yes | Existing contact uuid to delete. |
+
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `uuid` | string (uuid) |  |
 
 ### `search_contacts`
 
@@ -349,6 +565,15 @@ Search contacts in the authenticated user's company. Combine filters to narrow t
 | `consumerUnitUuid` | string (uuid) | no | Restrict results to contacts linked to this consumer unit via the consumer-unit/contact join table. Cross-company uuids return no rows. |
 | `limit` | integer | no | Default: `50`. |
 
+Returns `structuredContent.result` (array of object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `[].uuid` | string (uuid) |  |
+| `[].name` | string |  |
+| `[].email` | string (email) \| null |  |
+| `[].phone` | string |  |
+
 ### `search_invoices`
 
 **Buscar cobranças**
@@ -365,17 +590,110 @@ Search invoices (Cobranças, Helios's monthly charge to a client) in the authent
 | `status` | `"processing"`, `"created"`, `"paid"`, `"canceling"`, `"canceled"`, `"expired"`, `"returned"`, `"updating"`, `"updated"`, `"processing_payment"`, `"unbilled"` | no | Status of the latest boleto, or `unbilled` for invoices without any boleto. |
 | `limit` | integer | no | Maximum rows to return, 1-100 (default 50). |
 
+Returns `structuredContent.result` (array of object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `[].uuid` | string (uuid) |  |
+| `[].period` | string | Billing period, MMM/YYYY. |
+| `[].dueDate` | string | Due date, YYYY-MM-DD. |
+| `[].clientUuid` | string (uuid) |  |
+| `[].clientName` | string |  |
+| `[].consumerUnitUuid` | string (uuid) |  |
+| `[].holderName` | string | Consumer unit holder name. |
+| `[].installationNumber` | string \| null |  |
+| `[].consumerUnitNumber` | string \| null |  |
+| `[].totalBrl` | string | Invoice total as stored, BRL as an exact decimal string ("123.45"). |
+| `[].billingStatus` | `"processing"`, `"created"`, `"paid"`, `"canceling"`, `"canceled"`, `"expired"`, `"returned"`, `"updating"`, `"updated"`, `"processing_payment"` \| null | Status of the most recently issued boleto (by creation time), or null when no boleto was ever issued. |
+
 ### `get_invoice`
 
 **Detalhar cobrança**
 
 Effect: Read-only
 
-Get one invoice by uuid with its stored line amounts (compensation, discounts, CEMIG bill, surplus B wire, extra items, total), the generation units that compensated it and every boleto issued for it, newest first. Amounts are BRL decimal strings exactly as stored; don't recompute them. Read-only: it never issues or syncs boletos. A missing or another company's uuid returns NotFoundError.
+Get one invoice by uuid with its stored line amounts (compensation, discounts, CEMIG bill, surplus B wire, extra items, total), the generation units that compensated it and every boleto issued for it, newest first. Each boleto in `billings` carries `cancel`: whether cancel_bank_slip can cancel it now and, if not, the reason in Brazilian Portuguese. Amounts are BRL decimal strings exactly as stored; don't recompute them. Read-only: it never issues or syncs boletos. A missing or another company's uuid returns NotFoundError.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `uuid` | string (uuid) | yes | Invoice uuid, e.g. from search_invoices. |
+
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `uuid` | string (uuid) |  |
+| `period` | string | Billing period, MMM/YYYY. |
+| `dueDate` | string | Due date, YYYY-MM-DD. |
+| `client` | object |  |
+| `client.uuid` | string (uuid) |  |
+| `client.name` | string |  |
+| `client.document` | string | CPF or CNPJ, digits only. |
+| `consumerUnit` | object |  |
+| `consumerUnit.uuid` | string (uuid) |  |
+| `consumerUnit.holderName` | string |  |
+| `consumerUnit.installationUuid` | string (uuid) |  |
+| `consumerUnit.installationNumber` | string \| null |  |
+| `consumerUnit.consumerUnitNumber` | string \| null |  |
+| `tariff` | string | Tariff in BRL per kWh, 8 decimal places. |
+| `consumptionKwh` | string |  |
+| `compensationKwh` | string |  |
+| `balanceKwh` | string |  |
+| `balancePeriod` | string | Period the kWh balance refers to. |
+| `discountPercentage` | string |  |
+| `discountBrl` | string | Discount on the compensation amount, BRL as an exact decimal string ("123.45"). |
+| `promptPaymentDiscountPercentage` | string |  |
+| `promptPaymentDiscountBrl` | string | Discount granted when paid by the due date, already excluded from totalBrl, BRL as an exact decimal string ("123.45"). |
+| `compensationBrl` | string | Compensated energy amount, BRL as an exact decimal string ("123.45"). |
+| `cemigBillBrl` | string | CEMIG bill amount, BRL as an exact decimal string ("123.45"). |
+| `includeCemigBill` | boolean | Whether cemigBillBrl is charged as part of totalBrl. |
+| `surplusBWireBrl` | string | Surplus B wire amount, subtracted from the total, BRL as an exact decimal string ("123.45"). |
+| `totalBrl` | string | Invoice total as stored, BRL as an exact decimal string ("123.45"). |
+| `extraItems` | array of object |  |
+| `extraItems[].uuid` | string (uuid) |  |
+| `extraItems[].name` | string |  |
+| `extraItems[].amountBrl` | string | Item amount (negative for a credit), BRL as an exact decimal string ("123.45"). |
+| `generationUnits` | array of object |  |
+| `generationUnits[].uuid` | string (uuid) |  |
+| `generationUnits[].name` | string |  |
+| `generationUnits[].compensationKwh` | string | kWh this generation unit compensated on the invoice. |
+| `generationUnits[].surplusBWireBrl` | string | Surplus B wire amount attributed to this unit, BRL as an exact decimal string ("123.45"). |
+| `billingStatus` | `"processing"`, `"created"`, `"paid"`, `"canceling"`, `"canceled"`, `"expired"`, `"returned"`, `"updating"`, `"updated"`, `"processing_payment"` \| null | Status of the most recently issued boleto (by creation time), or null when no boleto was ever issued. |
+| `billings` | array of object | Every boleto issued for the invoice, newest first. |
+| `billings[].uuid` | string (uuid) |  |
+| `billings[].bank` | `"btg"`, `"cora"`, `"sicoob"` |  |
+| `billings[].status` | `"processing"`, `"created"`, `"paid"`, `"canceling"`, `"canceled"`, `"expired"`, `"returned"`, `"updating"`, `"updated"`, `"processing_payment"` |  |
+| `billings[].amount` | string | Amount due when paid by the due date, BRL as an exact decimal string ("123.45"). |
+| `billings[].amountPaid` | string | Amount paid so far, BRL as an exact decimal string ("123.45"). |
+| `billings[].paidAt` | string \| null | Payment date, YYYY-MM-DD. |
+| `billings[].dueDate` | string | Boleto due date, YYYY-MM-DD. |
+| `billings[].manuallyCreated` | boolean |  |
+| `billings[].createdAt` | string | When the boleto was issued (timestamp). |
+| `billings[].cancel` | object | Whether cancel_bank_slip can cancel this boleto now, judged from its status. When it can't, reason says why, in Brazilian Portuguese. |
+| `billings[].cancel.allowed` | boolean | Whether cancel_bank_slip can cancel this boleto now. |
+| `billings[].cancel.reason` | string \| null | Why it can't, in Brazilian Portuguese, to show the user; null when allowed. |
+
+### `cancel_bank_slip`
+
+**Cancelar boleto**
+
+Effect: Write (may change or delete existing data), idempotent, acts outside Helios
+
+Cancel an invoice's boleto at its bank and mark its billing canceled in Helios. Irreversible: a canceled boleto can't be paid or restored, and a boleto issued again for the invoice gets a new barcode and payment line. Only call it after the user explicitly confirmed this cancellation: show the invoice, the boleto's bank, amount and due date, and ask first. Take both uuids from get_invoice (`billings`, newest first) and pick only a boleto whose `cancel.allowed` is true; `cancel.reason` says why another can't be canceled. After a `canceled` or `already_canceled` outcome, call get_invoice again and tell the user about any other boleto of the invoice whose `cancel.allowed` is still true, since it can still be paid, or whose status is `processing` or `canceling`, since it may still be or become payable. A billing that is already canceled returns outcome `already_canceled` without contacting the bank, so a repeated call is safe. Errors: NotFoundError when the invoice or billing is missing, belongs to another company, or the billing isn't on that invoice; ConflictError when the billing's status forbids canceling (paid, payment clearing, returned, still being issued or being canceled) or the bank refused or doesn't know the boleto, with the reason in the message; nothing changed, so don't retry it unchanged. ServerError when the bank couldn't be reached, was unavailable or the result is unclear: call get_invoice again and check the billing's status before retrying.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `invoiceUuid` | string (uuid) | yes | Invoice (Cobrança) whose boleto to cancel. |
+| `billingUuid` | string (uuid) | yes | The boleto's billing uuid, from get_invoice's `billings`; it must belong to invoiceUuid. |
+
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `outcome` | `"canceled"`, `"already_canceled"` | `canceled`: the bank canceled the boleto now. `already_canceled`: it had already been canceled, in Helios (no bank call) or at the bank; a repeated call returns this. |
+| `billing` | object | The billing whose boleto was canceled. |
+| `billing.uuid` | string (uuid) |  |
+| `billing.status` | `"processing"`, `"created"`, `"paid"`, `"canceling"`, `"canceled"`, `"expired"`, `"returned"`, `"updating"`, `"updated"`, `"processing_payment"` | The billing's status after the call: `canceled`. |
 
 ### `search_energy_bills`
 
@@ -393,6 +711,45 @@ Search imported CEMIG energy bills (contas de energia) in the authenticated user
 | `installationNumber` | string | no | Exact CEMIG installation number printed on the bill, 10 digits starting with 3. |
 | `period` | string | no | Billing period MMM/YYYY with an uppercase pt-BR month abbreviation (JAN FEV MAR ABR MAI JUN JUL AGO SET OUT NOV DEZ). Example: FEV/2026. |
 | `limit` | integer | no | Maximum rows to return, 1-100 (default 50). |
+
+Returns `structuredContent.result` (array of object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `[].uuid` | string (uuid) |  |
+| `[].period` | string | Billing period, MMM/YYYY. |
+| `[].installationUuid` | string (uuid) | Installation the bill belongs to. |
+| `[].installationNumber` | string |  |
+| `[].consumerUnitNumber` | string \| null |  |
+| `[].generationUnitUuid` | string (uuid) | Generation unit whose CEMIG export the bill was imported from. |
+| `[].readingStart` | string | YYYY-MM-DD. |
+| `[].readingEnd` | string | YYYY-MM-DD. |
+| `[].nextReadingDate` | string | YYYY-MM-DD. |
+| `[].dueDate` | string | CEMIG due date, YYYY-MM-DD. |
+| `[].total` | string | Bill total excluding compensation values, BRL as an exact decimal string ("123.45"). |
+| `[].tariff` | string \| null | Tariff in BRL per kWh, 8 decimal places. |
+| `[].installationCategory` | string |  |
+| `[].installationClass` | `"Monofásico"`, `"Bifásico"`, `"Trifásico"` |  |
+| `[].installationSubClass1` | string |  |
+| `[].installationSubClass2` | string \| null |  |
+| `[].tariffModel` | string |  |
+| `[].availabilityTotalCost` | string \| null | Availability (minimum) charge including PIS/COFINS and ICMS, BRL as an exact decimal string; null when the bill has none. |
+| `[].availabilityPisCof` | string \| null | PIS/COFINS on the availability charge, BRL as an exact decimal string; null when the bill has none. |
+| `[].availabilityIcms` | string \| null | ICMS on the availability charge, BRL as an exact decimal string; null when the bill has none. |
+| `[].consumptionKwh` | string \| null | Total metered consumption, kWh as a decimal string; null when the bill has none. |
+| `[].notCompensatedConsumptionKwh` | string \| null | Consumption not compensated by distributed generation, kWh as a decimal string; null when the bill has none. |
+| `[].icmsAndPisCofExemptCompensationKwh` | string \| null | Energy exempt from ICMS and PIS/COFINS ("En. isenta"), kWh as a decimal string; null when the bill has none. |
+| `[].icmsAndPisCofExemptCompensationBrl` | string \| null | ICMS and PIS/COFINS exempt energy ("En. isenta"), BRL as an exact decimal string; null when the bill has none. |
+| `[].icmsExemptCompensationKwh` | string \| null | Energy compensated by distributed generation other than own generation ("En. SCEE"), kWh as a decimal string; null when the bill has none. |
+| `[].icmsExemptCompensationBrl` | string \| null | SCEE compensated energy ("En. SCEE"), BRL as an exact decimal string; null when the bill has none. |
+| `[].icmsExemptCompensationPisCof` | string \| null | PIS/COFINS on the SCEE energy, BRL as an exact decimal string; null when the bill has none. |
+| `[].gdICompensationKwh` | string \| null | GD I compensation, kWh as a decimal string; null when the bill has none. |
+| `[].gdICompensationBrl` | string \| null | GD I compensation (zero or negative, a credit), BRL as an exact decimal string; null when the bill has none. |
+| `[].gdIICompensationKwh` | string \| null | GD II compensation, kWh as a decimal string; null when the bill has none. |
+| `[].gdIICompensationBrl` | string \| null | GD II compensation (zero or negative, a credit), BRL as an exact decimal string; null when the bill has none. |
+| `[].additionalCompensationKwh` | string \| null | Additional compensation, kWh as a decimal string; null when the bill has none. |
+| `[].additionalCompensationBrl` | string \| null | Additional compensation (zero or negative, a credit), BRL as an exact decimal string; null when the bill has none. |
+| `[].currentBalanceKwh` | string \| null | Credit balance after this bill, kWh as a decimal string; null when the bill has none. |
 
 ### `search_gd_reports`
 
@@ -412,6 +769,32 @@ Search imported CEMIG GD reports (Relatório GD) in the authenticated user's com
 | `postHour` | `"FORAP"`, `"PONTA"`, `"NOTUR"` | no | Only this tariff time band: FORAP, PONTA or NOTUR. |
 | `limit` | integer | no | Maximum rows to return, 1-100 (default 50). |
 
+Returns `structuredContent.result` (array of object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `[].uuid` | string (uuid) |  |
+| `[].generationUnitUuid` | string (uuid) | Generation unit whose GD report the row was imported from. |
+| `[].installationUuid` | string (uuid) | Installation the row describes. |
+| `[].installationNumber` | string |  |
+| `[].consumerUnitNumber` | string \| null |  |
+| `[].period` | string | Report period, MMM/YYYY. |
+| `[].usePeriod` | string | Period whose credits the row compensates, MMM/YYYY. |
+| `[].gdMode` | `"Auto Consumo-Recebedora"`, `"Auto Consumo-Geradora"`, `"Ger. Compartilhada-Geradora"`, `"Ger. Compartilhada-Recebedora"`, `""` | CEMIG GD mode: the generator ("-Geradora") or a recipient ("-Recebedora"). |
+| `[].postHour` | `"FORAP"`, `"PONTA"`, `"NOTUR"` | Tariff time band (posto horário): FORAP, PONTA or NOTUR. |
+| `[].quota` | string | Share of the generation unit's credits assigned to the installation, percent (0-100), 5 decimal places. |
+| `[].consumptionKwh` | string | Energy consumed by the installation, kWh as a decimal string (8 decimal places). |
+| `[].generationKwh` | string | Energy generated by the installation, kWh as a decimal string (8 decimal places). |
+| `[].compensationKwh` | string | Energy compensated in the period, kWh as a decimal string (8 decimal places). |
+| `[].additionalCompensationKwh` | string \| null | Additional compensated energy (GD II), kWh as a decimal string; null when absent. |
+| `[].previousBalanceKwh` | string | Credit balance carried over from the last period, kWh as a decimal string (8 decimal places). |
+| `[].transferredKwh` | string | Energy transferred to other installations, kWh as a decimal string (8 decimal places). |
+| `[].injectedKwh` | string | Energy injected or received from other installations, kWh as a decimal string (8 decimal places). |
+| `[].currentBalanceKwh` | string | Credit balance at the end of the period, kWh as a decimal string (8 decimal places). |
+| `[].expiredBalanceKwh` | string | Credit balance that expired in the period, kWh as a decimal string (8 decimal places). |
+| `[].nextBalanceExpKwh` | string | Credit balance that expires next, kWh as a decimal string (8 decimal places). |
+| `[].nextBalanceExpPeriod` | string \| null | Period when nextBalanceExpKwh expires, MMM/YYYY. |
+
 ### `search_generation_units`
 
 **Buscar unidades geradoras**
@@ -427,6 +810,18 @@ Search generation units (Unidades Geradoras, the plants whose output is credited
 | `gdType` | `"GD_I"`, `"GD_II"` | no | Only this GD regime: GD_I or GD_II. |
 | `limit` | integer | no | Maximum rows to return, 1-100 (default 50). |
 
+Returns `structuredContent.result` (array of object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `[].uuid` | string (uuid) |  |
+| `[].name` | string |  |
+| `[].gdType` | `"GD_I"`, `"GD_II"` | Regulatory GD regime: GD_I or GD_II. |
+| `[].administrationFeePercentage` | string | Administration fee, percent as a decimal string with 2 places ("12.00"). |
+| `[].installationUuid` | string (uuid) | The plant's CEMIG installation. |
+| `[].installationNumber` | string \| null |  |
+| `[].consumerUnitNumber` | string \| null |  |
+
 ### `get_generation_unit`
 
 **Detalhar unidade geradora**
@@ -438,3 +833,15 @@ Get one generation unit by uuid with its GD regime, administration fee and plant
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `uuid` | string (uuid) | yes | Generation unit uuid, e.g. from search_generation_units or an energy bill or GD report row. |
+
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `uuid` | string (uuid) |  |
+| `name` | string |  |
+| `gdType` | `"GD_I"`, `"GD_II"` | Regulatory GD regime: GD_I or GD_II. |
+| `administrationFeePercentage` | string | Administration fee, percent as a decimal string with 2 places ("12.00"). |
+| `installationUuid` | string (uuid) | The plant's CEMIG installation. |
+| `installationNumber` | string \| null |  |
+| `consumerUnitNumber` | string \| null |  |

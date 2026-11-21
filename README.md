@@ -2,9 +2,10 @@
 
 Conecte o seu assistente de IA (Claude, ChatGPT ou Codex) ao **Helios**, o
 sistema de gestão de energia solar. Pelo assistente você consulta e cadastra
-clientes, instalações CEMIG, unidades consumidoras (UCs) e contatos, e
-consulta cobranças e boletos, contas de energia, relatórios GD e unidades
-geradoras (somente leitura), conversando em português, sem abrir o sistema.
+clientes, instalações CEMIG, unidades consumidoras (UCs) e contatos,
+consulta cobranças e cancela boletos, e consulta contas de energia,
+relatórios GD e unidades geradoras (somente leitura), conversando em
+português, sem abrir o sistema.
 
 A conexão usa o protocolo [MCP](https://modelcontextprotocol.io) e o seu
 login do Helios: o assistente só vê e altera os dados da empresa da sua
@@ -192,10 +193,10 @@ Depois experimente, por exemplo:
 
 ## O que o Helios MCP faz
 
-A lista completa de ferramentas, com o que cada uma faz e os seus
-parâmetros, está em **[TOOLS.md](TOOLS.md)**. O assistente lê essas
-mesmas descrições direto do servidor, então você não precisa copiar nada
-para ele.
+A lista completa de ferramentas, com o que cada uma faz, os seus
+parâmetros e o que ela retorna, está em **[TOOLS.md](TOOLS.md)**. O
+assistente lê essas mesmas descrições direto do servidor, então você não
+precisa copiar nada para ele.
 
 Ferramentas de consulta são marcadas como somente leitura e, em geral,
 rodam sem perguntar. Ferramentas que cadastram, alteram ou excluem dados
@@ -214,6 +215,7 @@ Claude Code e no Claude Desktop você também pode chamá-los pelo nome
 | `onboard-client` | Cadastrar um cliente completo: cliente, instalação, UC e contatos, sem duplicar o que já existe |
 | `look-up-client` | Encontrar um cliente por CPF/CNPJ, número da instalação ou da UC, telefone ou e-mail, e consultar as suas cobranças, boletos, contas de energia e relatórios GD |
 | `manage-contacts` | Incluir, alterar, vincular, desvincular ou remover contatos das UCs |
+| `cancel-bank-slip` | Cancelar no banco o boleto de uma cobrança, depois de mostrar o boleto e pedir a sua confirmação. Não emite boleto novo |
 
 ## Desconectar
 
