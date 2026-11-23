@@ -5,11 +5,15 @@ sistema de gestão de energia solar. Pelo assistente você consulta e cadastra
 clientes, instalações CEMIG, unidades consumidoras (UCs) e contatos,
 consulta cobranças e cancela boletos, e consulta contas de energia,
 relatórios GD e unidades geradoras (somente leitura), conversando em
-português, sem abrir o sistema.
+português, sem abrir o sistema. Administradores do Helios também podem
+pedir análises de dados, como totais, rankings e a evolução mês a mês,
+sempre somente leitura.
 
 A conexão usa o protocolo [MCP](https://modelcontextprotocol.io) e o seu
 login do Helios: o assistente só vê e altera os dados da empresa da sua
-conta, com as mesmas permissões que você tem no sistema.
+conta, com as mesmas permissões que você tem no sistema. A única exceção:
+nas análises de dados (só para administradores), um super administrador
+pode escolher outra empresa.
 
 **Endereço do servidor MCP:**
 
@@ -216,6 +220,7 @@ Claude Code e no Claude Desktop você também pode chamá-los pelo nome
 | `look-up-client` | Encontrar um cliente por CPF/CNPJ, número da instalação ou da UC, telefone ou e-mail, e consultar as suas cobranças, boletos, contas de energia e relatórios GD |
 | `manage-contacts` | Incluir, alterar, vincular, desvincular ou remover contatos das UCs |
 | `cancel-bank-slip` | Cancelar no banco o boleto de uma cobrança, depois de mostrar o boleto e pedir a sua confirmação. Não emite boleto novo |
+| `analyze-data` | Responder perguntas analíticas (totais, rankings, evolução por mês) com consultas somente leitura; só para administradores |
 
 ## Desconectar
 

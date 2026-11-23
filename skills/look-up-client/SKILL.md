@@ -26,6 +26,8 @@ descriptions; this skill only gives the order of the work.
   invoice, point the user to the Helios web app.
 - Quote amounts, kWh and dates exactly as the tools return them. Never
   recompute a total or a balance.
+- For totals, rankings or trends across many records, use the
+  `analyze-data` workflow instead (administrators only).
 
 ## Steps
 

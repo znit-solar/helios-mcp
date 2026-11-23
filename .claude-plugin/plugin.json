@@ -1,7 +1,7 @@
 {
 	"name": "helios",
-	"version": "1.1.0+1733e2b",
-	"description": "Connect Claude to Helios: clients, CEMIG installations, consumer units and contacts, boleto cancellation, plus read-only invoices, energy bills, GD reports and generation units, with guided workflows.",
+	"version": "1.2.0+19f5d58",
+	"description": "Connect Claude to Helios: clients, CEMIG installations, consumer units and contacts, boleto cancellation, plus read-only invoices, energy bills, GD reports, generation units and, for administrators, data analysis, with guided workflows.",
 	"author": {
 		"name": "Znit Solar"
 	},

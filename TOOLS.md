@@ -2,19 +2,20 @@
 
 <!-- Generated from the Helios MCP server by `npm run generate:client-kit`. Do not edit by hand. -->
 
-Server version: `1.1.0`
+Server version: `1.2.0`
 
 This catalog lists what the Helios MCP server offers to AI assistants.
 Assistants read the same descriptions, parameter schemas and output
 schemas directly from the server when they connect, so you never need to
 paste them anywhere.
-Every tool acts only on the data of the company you logged in with.
+Every tool acts only on the data of the company you logged in with; in the analytics tools, a super administrator may choose another company.
 
 ## Tools
 
 | Tool | Title | Effect |
 |---|---|---|
 | [`get_current_user`](#get_current_user) | Usuário conectado | Read-only |
+| [`search_companies`](#search_companies) | Buscar empresas | Read-only |
 | [`create_client`](#create_client) | Cadastrar cliente | Write (additive) |
 | [`update_client`](#update_client) | Atualizar cliente | Write (may change or delete existing data), idempotent |
 | [`search_clients`](#search_clients) | Buscar clientes | Read-only |
@@ -35,19 +36,22 @@ Every tool acts only on the data of the company you logged in with.
 | [`search_gd_reports`](#search_gd_reports) | Buscar relatórios GD | Read-only |
 | [`search_generation_units`](#search_generation_units) | Buscar unidades geradoras | Read-only |
 | [`get_generation_unit`](#get_generation_unit) | Detalhar unidade geradora | Read-only |
+| [`describe_analytics_schema`](#describe_analytics_schema) | Descrever dados para análise | Read-only |
+| [`run_analytics_query`](#run_analytics_query) | Executar consulta analítica | Read-only |
 
 ## Server instructions
 
 Every assistant receives these instructions when it connects:
 
-- Helios is the management system of a Brazilian solar energy company: clients, CEMIG installations, consumer units (UCs) and their contacts.
-- Every tool operates within the authenticated user's company. A uuid from another company behaves exactly like a missing one (NotFoundError).
+- Helios is the management system of a Brazilian solar energy company: clients, CEMIG installations, consumer units (UCs) and their contacts, with their billing and CEMIG data and read-only SQL analytics over them.
+- Every tool operates within the authenticated user's company. A uuid from another company behaves exactly like a missing one (NotFoundError). The one exception: a super administrator may find other companies with search_companies and pass one's uuid to run_analytics_query.
 - Call get_current_user first to confirm the connection and which company you are acting for.
 - Search before creating: look clients up by document and installations by installation or consumer unit number. Create tools return ConflictError on duplicates.
 - Formats: documents (CPF 11 digits, CNPJ 14 digits) and ZIP codes are digits only; installation numbers are 10 digits starting with 3; state codes are 2 uppercase letters.
 - Billing data: invoices (Cobranças) and their boletos are read-only, except cancel_bank_slip, which cancels a boleto at its bank and can't be undone: call it only after the user explicitly confirms. Periods are MMM/YYYY with pt-BR months (FEV/2026); money is BRL as exact decimal strings, to quote as stored, never to recompute.
 - Read-only CEMIG data: generation units (UGs), imported energy bills (contas de energia) and GD reports (generation, compensation and credit balance in kWh) per installation and period.
-- A failed call returns isError with the text `<ErrorType>: <message>`, where ErrorType is ValidationError, NotFoundError, ConflictError or ServerError. Messages are in Brazilian Portuguese and can be shown to the user as they are.
+- Analytics (administrators only): for totals, rankings, trends or comparisons across many records, call describe_analytics_schema, then run_analytics_query with one read-only SELECT, one call at a time. When the user names the company to analyze, find its uuid with search_companies first. Aggregate in SQL; a truncated result is incomplete. Say how current the data is (dataAsOf). For one specific record, use the search_ and get_ tools.
+- A failed call returns isError with the text `<ErrorType>: <message>`, where ErrorType is ValidationError, NotFoundError, ConflictError, ForbiddenError or ServerError. Messages are in Brazilian Portuguese and can be shown to the user as they are.
 - Helios users are Brazilian: answer them in Brazilian Portuguese unless they write in another language.
 
 ## Tool reference
@@ -74,6 +78,31 @@ Returns `structuredContent.result` (object). Its fields:
 | `company.uuid` | string (uuid) |  |
 | `company.name` | string |  |
 | `company.cnpj` | string |  |
+
+### `search_companies`
+
+**Buscar empresas**
+
+Effect: Read-only
+
+Find Helios companies by name or CNPJ and return their uuids, for run_analytics_query's companyUuid when the user names a company instead of meaning their own. Super administrators see every company; other users see only their own (isCurrentUserCompany marks it). Name matching ignores case and accents, and every word given must appear in the company's legal name, in any order. If nothing matches, retry with the most distinctive single word or with the CNPJ. Calls count toward the analytics rate limits (ServerError: retry later). Returns an array, possibly empty.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | no | Words of the company name, in any order (each must appear in the legal name); case and accents are ignored. |
+| `cnpj` | string | no | Exact CNPJ, 14 digits. |
+| `limit` | integer | no | Maximum companies to return (default 20). |
+
+Returns `structuredContent.result` (array of object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `[].uuid` | string (uuid) |  |
+| `[].name` | string |  |
+| `[].cnpj` | string |  |
+| `[].city` | string |  |
+| `[].state` | string |  |
+| `[].isCurrentUserCompany` | boolean |  |
 
 ### `create_client`
 
@@ -845,3 +874,79 @@ Returns `structuredContent.result` (object). Its fields:
 | `installationUuid` | string (uuid) | The plant's CEMIG installation. |
 | `installationNumber` | string \| null |  |
 | `consumerUnitNumber` | string \| null |  |
+
+### `describe_analytics_schema`
+
+**Descrever dados para análise**
+
+Effect: Read-only
+
+Describe the read-only analytics views that run_analytics_query can use: what each view holds, its columns with types, units and allowed values, the aggregation rules that keep totals right, helper functions, limits and verified example queries. Call it once before writing SQL: without arguments for the overview, then with views=[…] for the columns of the views you need. Only administrators can use it (ForbiddenError otherwise).
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `views` | array of `"company"`, `"clients"`, `"contacts"`, `"consumer_units_contacts"`, `"installations"`, `"consumer_units"`, `"generation_units"`, `"compensation_distributions"`, `"compensation_distribution_entries"`, `"invoices"`, `"extra_invoice_items"`, `"invoice_compensation_ratios"`, `"billings"`, `"energy_bills"`, `"gd_reports"`, `"notification_messages"` | no | Views to describe column by column. Omit for the overview of every view. |
+
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `dialect` | string |  |
+| `timeZone` | string |  |
+| `limits` | object |  |
+| `limits.defaultMaxRows` | number |  |
+| `limits.maxRows` | number |  |
+| `limits.statementTimeoutSeconds` | number |  |
+| `limits.maxSqlLength` | number |  |
+| `limits.maxRowBytes` | number |  |
+| `limits.maxResultChars` | number |  |
+| `limits.maxStalenessSeconds` | number |  |
+| `notes` | array of string |  |
+| `views` | array of object |  |
+| `views[].name` | string |  |
+| `views[].description` | string |  |
+| `views[].columnNames` | array of string |  |
+| `views[].columns` | array of object | Optional. |
+| `views[].columns[].name` | string |  |
+| `views[].columns[].type` | string |  |
+| `views[].columns[].description` | string |  |
+| `functions` | array of object |  |
+| `functions[].signature` | string |  |
+| `functions[].description` | string |  |
+| `examples` | array of object |  |
+| `examples[].question` | string |  |
+| `examples[].sql` | string |  |
+
+### `run_analytics_query`
+
+**Executar consulta analítica**
+
+Effect: Read-only
+
+Run one read-only PostgreSQL 16 query (SELECT, or WITH … SELECT) over the Helios analytics views and return its rows. Use it for analysis across many records: totals, counts, averages, rankings, trends by period, comparisons and shares. For one specific client, UC or invoice, use the search_ and get_ tools. Call describe_analytics_schema first: only the views and columns it lists exist, and it gives the aggregation rules and verified examples. Every view holds only one company's rows, so never filter by company. Allowed: joins, CTEs, subqueries, GROUP BY/ROLLUP, window functions, FILTER, CASE, and aggregate, math, text, date/time, array and JSON functions. Not allowed: more than one statement, writes, DDL, SET, locking clauses, system functions and catalogs. Qualify a column only with the name or alias of a FROM item of the query or of an enclosing query. To use a set-returning function's columns with a prefix, name them: generate_series(…) AS g(day), then g.day; any other expression in FROM needs an alias, as in CAST('2026-01-01' AS date) AS d(day). Aggregate in SQL and return few rows: results stop at maxRows (default 200, max 1000) and at a size limit, and truncated=true means the rows are incomplete, so never total them yourself. Money is BRL as exact decimal strings: quote stored totals instead of recomputing them. Every result has dataAsOf and freshness: say how current the data is. Only administrators can use it (ForbiddenError otherwise). companyUuid: only super administrators may pass another company's uuid (from search_companies); for anyone else a company other than their own is NotFoundError. Calls are rate limited per user; run queries one at a time. Errors: ValidationError when the query is rejected or fails (message, hint and position included: fix it and retry), ServerError when analytics is unavailable or not enabled, its data is too far behind, or too many calls were made (retry later).
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `sql` | string | yes | One read-only PostgreSQL SELECT (WITH … SELECT allowed) over the views describe_analytics_schema lists. No other statements. |
+| `companyUuid` | string (uuid) | no | Company to query. Omit for your own company. Only super administrators may pass another company's uuid, taken from search_companies. |
+| `maxRows` | integer | no | Maximum rows to return (default 200, max 1000). Aggregate in SQL instead of raising it. |
+
+Returns `structuredContent.result` (object). Its fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `company` | object |  |
+| `company.uuid` | string (uuid) |  |
+| `company.name` | string |  |
+| `columns` | array of object |  |
+| `columns[].name` | string |  |
+| `columns[].type` | string |  |
+| `rows` | array of array of any |  |
+| `rowCount` | integer |  |
+| `maxRows` | integer |  |
+| `truncated` | boolean | True when more rows existed than were returned: the rows are incomplete. |
+| `truncatedBy` | `"rows"`, `"size"` \| null |  |
+| `dataAsOf` | string | The data includes every change committed up to this moment (America/Sao_Paulo, ISO 8601). |
+| `freshness` | `"current"`, `"behind"`, `"primary"` |  |
+| `stalenessSeconds` | number \| null |  |
+| `durationMs` | integer |  |
