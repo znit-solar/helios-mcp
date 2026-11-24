@@ -8,10 +8,10 @@
 		{
 			"name": "helios",
 			"source": "./",
-			"description": "Connect Claude to Helios: clients, CEMIG installations, consumer units and contacts, boleto cancellation, plus read-only invoices, energy bills, GD reports and generation units, with guided workflows.",
+			"description": "Connect Claude to Helios: lookups and data analysis for administrators (clients, invoices, boletos, energy bills, GD reports, generation units), client, CEMIG installation, consumer unit and contact registration, and boleto cancellation, with guided workflows.",
 			"category": "productivity",
 			"metadata": {
-				"sourceCommit": "19f5d5840a8987b1627deeaab65bc891b86a547d"
+				"sourceCommit": "b12fd0e1ea548b73d141b5c55ba08209f97f1818"
 			}
 		}
 	]

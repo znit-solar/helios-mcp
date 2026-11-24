@@ -1,19 +1,20 @@
 # Helios MCP
 
 Conecte o seu assistente de IA (Claude, ChatGPT ou Codex) ao **Helios**, o
-sistema de gestão de energia solar. Pelo assistente você consulta e cadastra
-clientes, instalações CEMIG, unidades consumidoras (UCs) e contatos,
-consulta cobranças e cancela boletos, e consulta contas de energia,
-relatórios GD e unidades geradoras (somente leitura), conversando em
-português, sem abrir o sistema. Administradores do Helios também podem
-pedir análises de dados, como totais, rankings e a evolução mês a mês,
-sempre somente leitura.
+sistema de gestão de energia solar. Pelo assistente você consulta clientes,
+instalações CEMIG, unidades consumidoras (UCs), contatos, cobranças e
+boletos, contas de energia, relatórios GD e unidades geradoras, pede
+análises de dados (totais, rankings, a evolução mês a mês), cadastra e
+altera clientes, instalações, UCs e contatos e cancela boletos,
+conversando em português, sem abrir o sistema. As consultas e as análises
+são somente leitura e exigem um usuário administrador do Helios.
 
 A conexão usa o protocolo [MCP](https://modelcontextprotocol.io) e o seu
 login do Helios: o assistente só vê e altera os dados da empresa da sua
-conta, com as mesmas permissões que você tem no sistema. A única exceção:
-nas análises de dados (só para administradores), um super administrador
-pode escolher outra empresa.
+conta, com as mesmas permissões que você tem no sistema, com duas
+diferenças: as consultas exigem um usuário administrador, mesmo que o
+sistema mostre esses dados a você, e, nas consultas e análises, um super
+administrador pode escolher outra empresa.
 
 **Endereço do servidor MCP:**
 
@@ -184,8 +185,8 @@ Com o assistente conectado, pergunte:
 
 > Quem sou eu no Helios?
 
-O assistente chama a ferramenta `get_current_user` e responde com o seu
-nome, e-mail e a empresa em que está trabalhando. Se aparecer um erro de
+O assistente chama a ferramenta `describe_analytics_schema` e responde com o
+seu nome e a empresa em que está trabalhando. Se aparecer um erro de
 autenticação, refaça o login (passo de login do seu assistente, acima).
 
 Depois experimente, por exemplo:
@@ -207,6 +208,12 @@ rodam sem perguntar. Ferramentas que cadastram, alteram ou excluem dados
 fazem os assistentes pedirem a sua confirmação antes. Leia o que vai ser
 gravado antes de confirmar.
 
+Toda consulta passa pelas ferramentas de análise do Helios. Se elas
+estiverem indisponíveis, o assistente avisa que as consultas estão
+temporariamente indisponíveis e, sem consultar, também não altera nem
+cancela nada. Nesse caso, tente de novo em alguns minutos ou use o Helios
+pelo navegador.
+
 ### Skills
 
 No Claude Code, no Claude Desktop e no Codex, o plugin traz roteiros para
@@ -217,10 +224,11 @@ Claude Code e no Claude Desktop você também pode chamá-los pelo nome
 | Skill | Para quê |
 |---|---|
 | `onboard-client` | Cadastrar um cliente completo: cliente, instalação, UC e contatos, sem duplicar o que já existe |
-| `look-up-client` | Encontrar um cliente por CPF/CNPJ, número da instalação ou da UC, telefone ou e-mail, e consultar as suas cobranças, boletos, contas de energia e relatórios GD |
 | `manage-contacts` | Incluir, alterar, vincular, desvincular ou remover contatos das UCs |
 | `cancel-bank-slip` | Cancelar no banco o boleto de uma cobrança, depois de mostrar o boleto e pedir a sua confirmação. Não emite boleto novo |
-| `analyze-data` | Responder perguntas analíticas (totais, rankings, evolução por mês) com consultas somente leitura; só para administradores |
+| `analyze-data` | Encontrar um cliente por CPF/CNPJ, número da instalação ou da UC, telefone ou e-mail, consultar as suas cobranças, boletos, contas de energia e saldo de créditos, e responder perguntas analíticas (totais, rankings, evolução por mês), sempre somente leitura |
+
+O antigo roteiro `look-up-client` agora faz parte de `analyze-data`.
 
 ## Desconectar
 
